@@ -1,0 +1,4 @@
+Fique à vontade para usar essa pasta para deixar código
+de tentativas que julgar relevantes para o projeto, mas não
+relevantes o suficiente para deixar no arquivo final ocupando
+espaço.
