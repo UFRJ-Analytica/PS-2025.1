@@ -1,4 +1,5 @@
-
+import seaborn as sns
+import matplotlib as plt
 from typing import Tuple, Union, Dict
 import pandas as pd
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
@@ -124,25 +125,26 @@ def build_ensemble(xgb_model: XGBClassifier, mlp_model: Pipeline) -> VotingClass
 #   Funções de treinamento
 # ===========================
 
-def split(file_path: str, target_column: str = "target", test_size: float = 0.2, random_state: int = 42
+def split(df: pd.DataFrame, target_column: str, test_size: float = 0.2, random_state: int = 42
         ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """
-    Lê o CSV, separa features/target e realiza o split em treino e teste.
+    Separa features e target e realiza o split em treino e teste.
 
     Parâmetros:
-    - file_path (str): Caminho para o arquivo CSV.
+    - df (pd.DataFrame): DataFrame completo com features e coluna alvo.
     - target_column (str): Nome da coluna alvo.
-    - test_size (float): Proporção dos dados para teste.
-    - random_state (int): Semente aleatória.
+    - test_size (float, opcional): Proporção dos dados para teste (padrão: 0.2).
+    - random_state (int, opcional): Semente aleatória para reprodutibilidade (padrão: 42).
 
     Retorna:
-    - Tuple contendo X_train, X_test, y_train, y_test
+    - Tuple: (X_train, X_test, y_train, y_test)
     """
 
+    if target_column not in df.columns:
+        raise ValueError(f"A coluna '{target_column}' não existe no DataFrame.")
 
-    df = pd.read_csv(file_path)
-    X = df.drop(target_column, axis=1)
-    y = df[target_column]
+    X = df.drop(columns=[target_column])
+    y = df['Target']
     return train_test_split(X, y, test_size=test_size, random_state=random_state)
 
 
@@ -184,13 +186,9 @@ def ensemble_test(ensemble_model: VotingClassifier,
 
 
 def ensemble_evaluate(y_test: Union[pd.Series, np.ndarray],
-                    y_pred: Union[pd.Series, np.ndarray]
-                    ) -> Dict[str, Union[float, Dict, np.ndarray]]:
+                    y_pred: Union[pd.Series, np.ndarray]) -> Dict[str, Union[float, Dict, np.ndarray]]:
     """
-    Avalia o desempenho do ensemble.
-
-    Retorna:
-    - dicionário com accuracy, classification report e matriz de confusão.
+    Avalia o desempenho do ensemble e exibe matriz de confusão com seaborn.
     """
     acc = accuracy_score(y_test, y_pred)
     report = classification_report(y_test, y_pred, output_dict=True)
@@ -200,15 +198,25 @@ def ensemble_evaluate(y_test: Union[pd.Series, np.ndarray],
     print(f"Accuracy: {acc:.4f}")
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
-    print("\nConfusion Matrix (normalizada):")
-    print(cm)
+
+    # Plot da matriz de confusão com seaborn
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues", cbar=True,
+                xticklabels=np.unique(y_test),
+                yticklabels=np.unique(y_test))
+    plt.xlabel("Predito")
+    plt.ylabel("Real")
+    plt.title("Matriz de Confusão Normalizada")
+    plt.tight_layout()
+    plt.show()
 
     return {"accuracy": acc, "report": report, "confusion_matrix": cm}
 
 
+
 if __name__ == "__main__":
 # Import a ser utilizado nos notebooks:
-#    from model_utils import (
+#    from modelo_e_treinamento import (
 #    split,
 #   ensemble_train,
 #    ensemble_test,
@@ -217,12 +225,11 @@ if __name__ == "__main__":
 
 
 
-    
-    file_path = "caminho para o dataset.csv"  # Altere para o caminho real do seu dataset
+    csv_path = " "
 
     
     print("Splitando dados...")
-    X_train, X_test, y_train, y_test = split(file_path, target_column="target")
+    X_train, X_test, y_train, y_test = split(csv_path, target_column="target")
 
     # === Treinamento do Ensemble ===
     print("\nTreinamento o ensemble...")
