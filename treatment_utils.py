@@ -35,6 +35,7 @@ def missplot(df):
 
 #Função para remover outliers
 def removedor_outliers(df, col, fator=1.5):
+    df = df.dropna(subset = col)
     q25, q75 = np.percentile(df[col], [25, 75])
     iqr = q75 - q25
     limite_inferior = q25 - fator * iqr
