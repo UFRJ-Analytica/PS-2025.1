@@ -60,9 +60,9 @@ def get_xgboost_model(X_train: Union[pd.DataFrame, np.ndarray],
 
 def get_mlp_model(X_train: Union[pd.DataFrame, np.ndarray], 
                 y_train: Union[pd.Series, np.ndarray], 
-                hidden_layers: Tuple[int, ...] = (128, 64, 32),
+                hidden_layers: Tuple[int, ...] = (64, 32),
                 alpha: float = 1e-4,
-                max_iter: int = 200
+                max_iter: int = 100
                 ) -> Pipeline:
     """
     Treina uma MLP com StandardScaler dentro de um pipeline.
@@ -213,6 +213,78 @@ def ensemble_evaluate(y_test: Union[pd.Series, np.ndarray],
     return {"accuracy": acc, "report": report, "confusion_matrix": cm}
 
 
+
+def train_and_evaluate_xgboost(
+    X_train: Union[pd.DataFrame, np.ndarray],
+    y_train: Union[pd.Series, np.ndarray],
+    X_test: Union[pd.DataFrame, np.ndarray],
+    y_test: Union[pd.Series, np.ndarray],
+    random_state: int = 42
+) -> Dict[str, Union[float, Dict, np.ndarray]]:
+    """
+    Treina um modelo XGBoost com RandomizedSearchCV e avalia nos dados de teste.
+
+    Parâmetros:
+    - X_train, y_train: dados de treino
+    - X_test, y_test: dados de teste
+    - random_state: controle de aleatoriedade
+
+    Retorna:
+    - Dicionário com accuracy, classification report e matriz de confusão
+    """
+
+    print("[XGBoost] Iniciando tuning...")
+
+    param_dist = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [3, 5, 7, 10],
+        'learning_rate': [0.01, 0.05, 0.1, 0.2],
+        'subsample': [0.6, 0.8, 1.0],
+        'colsample_bytree': [0.6, 0.8, 1.0]
+    }
+
+    xgb = XGBClassifier(use_label_encoder=False, eval_metric='logloss', verbosity=0)
+    rand_search = RandomizedSearchCV(
+        xgb,
+        param_distributions=param_dist,
+        n_iter=20,
+        cv=3,
+        scoring='f1_macro',
+        n_jobs=-1,
+        random_state=random_state
+    )
+    rand_search.fit(X_train, y_train)
+
+    print("\n[LOG - XGBoost] Melhores hiperparâmetros:")
+    for param, value in rand_search.best_params_.items():
+        print(f"  {param}: {value}")
+
+    best_model = rand_search.best_estimator_
+
+    # === Teste ===
+    print("\n[LOG - XGBoost] Realizando predição...")
+    y_pred = best_model.predict(X_test)
+
+    # === Avaliação ===
+    acc = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    cm = confusion_matrix(y_test, y_pred, normalize='true')
+
+    print("\n==== Avaliação ====")
+    print(f"Accuracy: {acc:.4f}")
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred))
+
+    # Matriz de confusão com seaborn
+    plt.figure(figsize=(6, 4))
+    sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues", xticklabels=True, yticklabels=True)
+    plt.title("Matriz de Confusão (Normalizada)")
+    plt.xlabel("Predito")
+    plt.ylabel("Verdadeiro")
+    plt.tight_layout()
+    plt.show()
+
+    return {"accuracy": acc, "report": report, "confusion_matrix": cm}
 
 if __name__ == "__main__":
 # Import a ser utilizado nos notebooks:
