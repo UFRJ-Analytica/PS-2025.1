@@ -1,0 +1,29 @@
+# Desafio Analytica
+
+Como parte do processo seletivo da liga acadêmica de ciência de dados da UFRJ, foi-nos passado um projeto em grupo para desenvolvermos um modelo de machine learning de previsão de resultados futebolísticos. O processo foi dividido na análise dos dados, tratamento dos mesmos e desenvolvimento do modelo de previsão para o vencedor da partida.
+
+# Análise Exploratória de Dados
+
+Como grupo, nos reunimos para definir perguntas relevantes sobre o tema e, a partir delas, criamos gráficos que nos ajudaram a visualizar e compreender melhor os dados. Com isso, conseguimos extrair insights interessantes sobre as partidas, como o fato de que times que jogam em casa tendem a ter maior probabilidade de vitória, que equipes adotam uma postura mais agressiva quando estão perdendo, dentre outros que estão no notebook. 
+
+Todo esse processo foi conduzido principalmente com o uso de técnicas de filtragem e análise de dados por meio das bibliotecas **pandas**, **numpy** e **seaborn**, que nos permitiram explorar padrões, segmentar informações relevantes e extrair insights com precisão. Além da análise em si, dedicamos bastante tempo ao cuidado visual dos gráficos, buscando torná-los não apenas informativos, mas também claros, esteticamente agradáveis e acessíveis para qualquer leitor, mesmo os que não estão familiarizados com o tema. Nosso objetivo foi garantir que cada visualização comunicasse algo relevante, facilitando a compreensão dos dados e tornando a apresentação dos resultados mais envolvente e impactante.
+
+# Tratamento de Dados
+
+Para tratarmos os dados usados, fizemos os seguintes processos: Remoção de Outliers; exibimos um gráfico de violinplot para esclarecer a distribuição dos outliers nas colunas, em seguida removemos os valores mais díspares do todo, calculando os limites inferiores e superiores utilizando um fator de remoção visível no gráfico criado, e o aplicando na função "removedor_outliers". Por fim, tivemos os outliers removidos e um gráfico melhor distribuído.
+
+Pensamos em diversas formas de preencher os NaN, usando o material de apoio fornecido no GitHub, testamos algumas funções, mas acabamos desenvolvendo uma lógica de trabalhar com a diferença média entre os dados de cada um dos times. É possível ter um detalhamento mais aprofundado do uso da lógica nos comentários da função no código. Para as colunas que possuíam valores faltantes demais, julgamos que seria ruim tentar preencher elas, então estabelecemos um valor arbitrário e removemos colunas com mais de 60% de NaN.
+
+Como os modelos de machine learning só lidam com valores numéricos, tivemos que contornar fazendo o encoding desses valores do seguinte modo: Queríamos que as colunas "Times 1", "Times 2" e "Vencedor" fossem codificadas de modo que correspondessem ao mesmo valor em todas as colunas. Para isso, usamos a função "set" do Python, que dá a união dos conjuntos, com os parâmetros sendo as colunas que queríamos encodar, e depois criamos um DataFrame passando o set como parâmetro. Depois criamos uma segunda coluna no DataFrame, que é a primeira coluna depois de ser encodada pelo OrdinalEncoder do sklearn, com isso criamos um dicionário e usamos a função "replace" do Python para substituir os valores nas colunas "Times 1", "Times 2" e "Vencedor". Depois fizemos a mesma coisa com os valores de posição dos jogadores. 
+
+Para a padronização dos dados, basicamente utilizamos a função StandardScaler do Sklearn. Fizemos isso pois alguns modelos podem ser sensíveis a diferentes escalas nas colunas. Essa função garante média = 0 e desvio padrão = 1, facilitando para os modelos.  
+
+# Processo da Modelagem Preditiva
+
+Para essa etapa, decidimos testar alguns modelos de machine learning clássicos para avaliar seu desempenho, e escolher qual seria utilizado na tunagem (para ampliar ainda mais sua eficiência). Utilizamos 80% do dataset para treino e os outros 20% para os testes. Os modelos utilizados foram o XGBoost, Random Forest, Gradient Boosting e Extra Trees. Entretanto, já era esperado que o modelo XGBoost seria o que performaria melhor, com média inicial de 49.5% de acurácia, enquanto o melhor dos outros apenas conseguiu 29.6%.
+
+Após isso, plotamos as "feature_importances" de cada um desses modelos, para ter uma ideia de quais colunas eram mais importantes, e descobrimos que o que mais importava eram os times que estavam jogando, depois "Chutes a Gol", o que contradiz um pouco o que o time esperava, dado que acreditávamos que colunas como "Posse de Bola" seriam fatores definitivos, mas não foram. Tentamos eliminar algumas das colunas mais importantes, mas o resultado não melhorou, tendo na verdade piorado um pouco, logo mantivemos todas.
+
+Então, partimos para a tunagem do modelo, utilizando o XGBClassifier. Realizamos a tunagem com a função GridSearchCV, que realiza permutações de parâmetros para encontrar valores ideais para aumento da acurácia. O maior problema nessa seção realmente foi o tempo de execução, dado que mesmo com "médias" iterações, o código estava demorando diversas horas para rodar. Porém, eventualmente chegamos a um valor ideal de 52.90% de acurácia, mas pode ser possível aumentar esse valor caso haja mais tempo de execução do código.
+
+Mais do que apenas encontrar o modelo com melhor desempenho, essa etapa nos permitiu entender a complexidade de prever resultados e como os dados muitas vezes desafiam nossas intuições. O processo revelou não só a força do XGBoost frente aos demais modelos, mas também a importância de experimentar, questionar suposições e respeitar os limites práticos, como o tempo de execução. Enfim, saímos não apenas com um modelo mais preciso, mas com uma visão mais crítica e madura sobre a análise preditiva em contextos reais.
