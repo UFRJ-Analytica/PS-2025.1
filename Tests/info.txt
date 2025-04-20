@@ -1,6 +1,5 @@
 Os arquivos testes serão organizados dessa maneira:
 
-Haverá um csv já pré-processado em /Data. Leremos dele as informações, e começaremos cada teste fazendo as alterações necessárias (por exemplo, eliminando alguma coluna).
+Haverá um csv já pré-processado em /Data/Entradas_teste. 
+Leremos dele as informações, e começaremos cada teste fazendo as alterações necessárias (por exemplo, eliminando alguma coluna).
 Então, rodamos o modelo e vemos o resultado.
-
-Dei algumas ideis de testes iniciais, mas é só ideia mesmo. 

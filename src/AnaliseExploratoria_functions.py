@@ -1,9 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.express as px
 import seaborn as sns
 from scipy.stats import probplot
 from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.impute import SimpleImputer, KNNImputer
+from typing import Union, List, Literal, Tuple
+
+
 
 def calcular_resultado(df):
     """
@@ -52,7 +58,6 @@ def substituir_tiros_por_chutes(df):
 
     return df_copy
 
-from typing import Tuple
 def histogram_and_stats(df: pd.DataFrame, column: str, plot: bool = True, interactive: bool = True, bins: int = 40)\
         -> Tuple[int, int, float, float, float, float, float, float, float, float, float]:
     """
@@ -155,7 +160,6 @@ def histogram_and_stats(df: pd.DataFrame, column: str, plot: bool = True, intera
 
     return (int(num_nan),int(num_valid),float(media),float(desvio),int(minimo),int(maximo),float(percentil_5),float(percentil_25),float(percentil_50),float(percentil_75),float(percentil_95))
 
-
 def evaluate_distribution(df: pd.DataFrame, column: str, show_boxplot: bool = False,bins: int = 40) -> dict:
     """
     Avalia a distribuição de uma coluna do DataFrame calculando skewness e
@@ -209,10 +213,6 @@ def evaluate_distribution(df: pd.DataFrame, column: str, show_boxplot: bool = Fa
         "kurtosis": kurtosis_value
     }
 
-import pandas as pd
-import numpy as np
-from sklearn.impute import SimpleImputer, KNNImputer
-
 def impute_missing_values(df: pd.DataFrame, columns: list or str, strategy: str = "median") -> pd.DataFrame:
     """
     Imputa os valores faltantes (NaN) nas colunas especificadas do DataFrame utilizando
@@ -248,8 +248,6 @@ def impute_missing_values(df: pd.DataFrame, columns: list or str, strategy: str 
 
     return df
 
-from sklearn.preprocessing import StandardScaler
-from typing import Union, List
 def standardize_and_knn_impute(
         df: pd.DataFrame,
         columns: Union[List[str], str],
@@ -294,8 +292,6 @@ def standardize_and_knn_impute(
         df[f'{col}_padronizada'] = standardized_vals[:, i]
 
     return df
-
-
 
 def position_to_binary(
         df: pd.DataFrame,
@@ -358,8 +354,6 @@ def position_to_binary(
         else:
             out[f"{col}_bin"] = binary
     return out
-from typing import Union, List, Literal
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 def normalizar_variaveis(
         df: pd.DataFrame,
@@ -397,9 +391,6 @@ def normalizar_variaveis(
 
     df.loc[:, columns] = scaler.fit_transform(df.loc[:, columns])
     return df
-
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-
 
 def criar_indices(
         df: pd.DataFrame,
