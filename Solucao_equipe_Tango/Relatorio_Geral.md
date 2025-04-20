@@ -2,9 +2,8 @@
 
 Escolhemos testar diferentes modelos e tratamentos de dados para comparar os desempenhos obtidos. Por isso, nossa solução está dividida em 2 arquivos:
 
-- [Arquivo 1 - XGBoost e ExtraTrees](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/draft.ipynb)
-- [Arquivo 2 - RandomForest](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/Desafio_Analytica_Colab.ipynb)
-
+- [Arquivo 1 - XGBoost e ExtraTrees](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/Desafio_Analytica_Colab_sol2.ipynb)
+- [Arquivo 2 - RandomForest](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/Desafio_Analytica_Colab_sol1.ipynb)
 
 
 ## Arquivo 1 - XGBoost e ExtraTrees
