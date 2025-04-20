@@ -4,6 +4,7 @@ Escolhemos testar diferentes modelos e tratamentos de dados para comparar os des
 
 - [Arquivo 1 - XGBoost e ExtraTrees](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/Desafio_Analytica_Colab_sol2.ipynb)
 - [Arquivo 2 - RandomForest](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/Desafio_Analytica_Colab_sol1.ipynb)
+- [Arquivo 3 - Script Python](https://github.com/AbraaoCG/PS-2025.1_tango/blob/main/Solucao_equipe_Tango/script_train_pred.py)
 
 
 ## Arquivo 1 - XGBoost e ExtraTrees
@@ -30,6 +31,10 @@ Removemos outliers de todas as colunas usando os mesmos parâmetros de IQR para 
 Para seleção de features, analisamos similaridade das features com Pearson, ANOVA e visualização de dados, para escolher manualmente as melhores.
 
 O modelo escolhido para esta abordagem foi o RandomForest.
+
+## Arquivo 3 - Script Python
+
+Nesse arquivo, foi utilizado o modelo presente no arquivo 1, de forma que ao executar o script com os argumentos corretos, o script treina o modelo com os dados de treino e realiza a predição para os dados de teste. Cada conjunto de dados é especificado por um caminho de um arquivo distinto. É possível especificar por meio de uma variável se os dados de teste já estão classificados ou não: caso sim, uma matriz confusão é salva no diretório 'Data/';caso não, um arquivo com os resultados das predições é salvo no mesmo diretório.
 
 
 ## Comparação dos modelos
