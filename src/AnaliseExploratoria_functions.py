@@ -256,38 +256,45 @@ def standardize_and_knn_impute(
         n_neighbors: int = 5
 ) -> pd.DataFrame:
     """
-    Padroniza (z‑score) as colunas especificadas e, em seguida, imputa os valores faltantes
-    usando KNN Imputer sobre os dados padronizados.
+    Imputa primeiro usando KNN (na escala original) e depois padroniza (z-score).
 
     Parameters:
-        df (pd.DataFrame): DataFrame contendo as colunas a serem processadas.
-        columns (list[str] | str): Nome ou lista de nomes das colunas a padronizar e imputar.
-        n_neighbors (int, optional): Número de vizinhos a considerar no KNNImputer.
-                                    Padrão é 5.
+        df (pd.DataFrame): DataFrame com colunas a serem processadas.
+        columns (list[str] | str): Nome(s) das colunas.
+        n_neighbors (int): Número de vizinhos do KNNImputer.
 
     Returns:
-        pd.DataFrame: O mesmo DataFrame, com as colunas informadas substituídas pelos valores
-                    padronizados e imputados.
+        pd.DataFrame: DataFrame com imputação e padronização.
     """
-    # garante lista de colunas
+    from sklearn.impute import KNNImputer
+    from sklearn.preprocessing import StandardScaler
+
     if isinstance(columns, str):
         columns = [columns]
 
-    # cópia para evitar SettingWithCopyWarning
     df = df.copy()
 
-    # 1) padroniza
-    scaler = StandardScaler()
-    scaled_vals = scaler.fit_transform(df.loc[:, columns])
-
-    # 2) imputa com KNN sobre os valores padronizados
+    # Passo 1: Imputa com KNN sobre dados originais
     imputer = KNNImputer(n_neighbors=n_neighbors)
-    imputed_vals = imputer.fit_transform(scaled_vals)
+    imputed_vals = imputer.fit_transform(df[columns])
 
-    # 3) atribui de volta ao DataFrame
-    df.loc[:, columns] = imputed_vals
+    # Garante que não há valores negativos pós-imputação
+    imputed_vals[imputed_vals < 0] = 0
+
+    # Atualiza o DataFrame
+    df[columns] = imputed_vals
+
+    # Passo 2 (opcional, só se precisar para o modelo):
+    # Padroniza os valores já imputados (se o modelo exigir)
+    scaler = StandardScaler()
+    standardized_vals = scaler.fit_transform(df[columns])
+
+    # Pode armazenar as variáveis padronizadas com outro nome, se preferir:
+    for i, col in enumerate(columns):
+        df[f'{col}_padronizada'] = standardized_vals[:, i]
 
     return df
+
 
 
 def position_to_binary(
@@ -351,59 +358,149 @@ def position_to_binary(
         else:
             out[f"{col}_bin"] = binary
     return out
+from typing import Union, List, Literal
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
-def create_offensive_indicators(
+def normalizar_variaveis(
         df: pd.DataFrame,
-        cols_team1: list[str],
-        cols_team2: list[str],
-        weights: tuple[float] = (2, 1, 1)
+        columns: Union[List[str], str],
+        method: Literal['zscore', 'minmax', 'robust'] = 'zscore'
 ) -> pd.DataFrame:
     """
-    Cria indicadores ofensivos para mandante (team1) e visitante (team2) a partir de colunas tratadas.
+    Normaliza as variáveis especificadas usando diferentes técnicas:
 
-    Cada indicador é uma média ponderada das três métricas fornecidas, usando pesos
-    que refletem a importância relativa de cada ação (por padrão, chute a gol = 2,
-    escanteio = 1, chute fora = 1). As colunas devem estar padronizadas (z‑scores)
-    e sem valores faltantes antes da chamada desta função.
+    Methods:
+        - 'zscore': padronização (média 0, desvio 1).
+        - 'minmax': normalização para o intervalo [0,1].
+        - 'robust': normalização baseada em mediana e IQR (menos sensível a outliers).
 
     Parameters:
-        df (pd.DataFrame): DataFrame contendo as colunas já padronizadas e imputadas.
-        cols_team1 (list[str]): Lista de três nomes de colunas para o time mandante,
-                                na ordem [chutes_a_gol, escanteios, chutes_fora].
-        cols_team2 (list[str]): Lista de três nomes de colunas para o time visitante,
-                                na ordem [chutes_a_gol, escanteios, chutes_fora].
-        weights (list[float], optional): Pesos para cada métrica, na mesma ordem das colunas.
-                                        Padrão é [2, 1, 1].
+        df (pd.DataFrame): DataFrame contendo as colunas a normalizar.
+        columns (list[str] | str): Nome ou lista de nomes das colunas.
+        method: Técnica de normalização a aplicar.
 
     Returns:
-        pd.DataFrame: Cópia do DataFrame original contendo duas novas colunas:
-                    - 'Indicador_Ofensivo_1'
-                    - 'Indicador_Ofensivo_2'
+        pd.DataFrame: DataFrame com as colunas informadas normalizadas.
     """
-    # Cópia para não modificar o original
+    if isinstance(columns, str):
+        columns = [columns]
     df = df.copy()
 
-    # Garantir que temos três pesos
-    if len(weights) != 3:
-        raise ValueError("A lista de pesos deve ter exatamente três elementos.")
+    if method == 'zscore':
+        scaler = StandardScaler()
+    elif method == 'minmax':
+        scaler = MinMaxScaler()
+    elif method == 'robust':
+        scaler = RobustScaler()
+    else:
+        raise ValueError(f"Método de normalização '{method}' não reconhecido.")
 
-    w = np.array(weights)
-    den = w.sum()
-
-    # Cálculo do indicador para o mandante
-    vals1 = df[cols_team1].to_numpy()
-    df.loc[:, 'Indicador_Ofensivo_1'] = (vals1 * w).sum(axis=1) / den
-
-    # Cálculo do indicador para o visitante
-    vals2 = df[cols_team2].to_numpy()
-    df.loc[:, 'Indicador_Ofensivo_2'] = (vals2 * w).sum(axis=1) / den
-
+    df.loc[:, columns] = scaler.fit_transform(df.loc[:, columns])
     return df
 
-# Exemplo de uso:
-# df = create_offensive_indicators(
-#     df,
-#     cols_team1=['Chutes a gol 1','Escanteios 1','Chutes fora 1'],
-#     cols_team2=['Chutes a gol 2','Escanteios 2','Chutes fora 2']
-# )
-# df[['Indicador_Ofensivo_1','Indicador_Ofensivo_2']].head()
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+
+
+def criar_indices(
+        df: pd.DataFrame,
+        norm_method: Literal['zscore', 'minmax', 'robust'] = 'minmax'
+) -> pd.DataFrame:
+    """
+    Normaliza variáveis originais, calcula índices defensivos e ofensivos,
+    preenche colunas faltantes com zero, evita KeyError e garante índices não-negativos.
+
+    - Usa minmax por padrão para evitar valores negativos.
+    - Colunas originais ausentes viram zero (nenhuma ação registrada).
+    - Índices clamped para >= 0.
+
+    Parâmetros:
+      df: DataFrame com variáveis originais e 'Position 1/2'.
+      norm_method: técnica de normalização.
+
+    Retorna DataFrame somente com índices derivados.
+    """
+    df = df.copy()
+    eps = 1e-5
+
+    orig_cols = [
+        'Defesas difíceis 1', 'Defesas difíceis 2',
+        'Chutes bloqueados 1', 'Chutes bloqueados 2',
+        'Tiro de meta 1', 'Tiro de meta 2',
+        'Contra-ataques 1', 'Contra-ataques 2',
+        'Faltas 1', 'Faltas 2',
+        'Cartões amarelos 1', 'Cartões amarelos 2',
+        'Cartões vermelhos 1', 'Cartões vermelhos 2',
+        'Chutes a gol 1', 'Chutes a gol 2',
+        'Chutes fora 1', 'Chutes fora 2',
+        'Escanteios 1', 'Escanteios 2',
+        'Impedimentos 1', 'Impedimentos 2',
+        'Gols 1', 'Gols 2',
+        'Posse 1(%)', 'Posse 2(%)',
+        'Position 1', 'Position 2'
+    ]
+
+    # preencher faltantes para evitar KeyError
+    for col in orig_cols:
+        if col not in df.columns:
+            df[col] = 0
+
+    # normaliza apenas o que existe
+    df = normalizar_variaveis(df, orig_cols, method=norm_method)
+
+    # fatores táticos
+    def1 = (1 - df['Position 1'])
+    def2 = (1 - df['Position 2'])
+    ofs1 = df['Position 1']
+    ofs2 = df['Position 2']
+
+    # defensivos
+    df['Desgaste_Defensivo_1'] = (
+                                         3*df['Defesas difíceis 1'] + df['Tiro de meta 1'] + df['Faltas 1'] +
+                                         2*df['Cartões amarelos 1'] + 5*df['Cartões vermelhos 1']
+                                 ) * def1
+    df['Desgaste_Defensivo_2'] = (
+                                         3*df['Defesas difíceis 2'] + df['Tiro de meta 2'] + df['Faltas 2'] +
+                                         2*df['Cartões amarelos 2'] + 5*df['Cartões vermelhos 2']
+                                 ) * def2
+
+    df['Barreira_Defensiva_1'] = (
+                                         4*df['Defesas difíceis 1'] + 3*df['Chutes bloqueados 1'] +
+                                         2*df['Contra-ataques 2'] + df['Impedimentos 2']
+                                 ) * def1
+    df['Barreira_Defensiva_2'] = (
+                                         4*df['Defesas difíceis 2'] + 3*df['Chutes bloqueados 2'] +
+                                         2*df['Contra-ataques 1'] + df['Impedimentos 1']
+                                 ) * def2
+
+    # ofensivos
+    df['Pressao_Ofensiva_1'] = (
+                                       2*df['Chutes a gol 1'] + df['Chutes fora 1'] +
+                                       df['Escanteios 1'] + 1.5*df['Impedimentos 1']
+                               ) * ofs1
+    df['Pressao_Ofensiva_2'] = (
+                                       2*df['Chutes a gol 2'] + df['Chutes fora 2'] +
+                                       df['Escanteios 2'] + 1.5*df['Impedimentos 2']
+                               ) * ofs2
+
+    df['Eficiencia_Finalizacao_1'] = (df['Gols 1'] / (df['Chutes a gol 1'] + df['Chutes fora 1'] + eps)) * ofs1
+    df['Eficiencia_Finalizacao_2'] = (df['Gols 2'] / (df['Chutes a gol 2'] + df['Chutes fora 2'] + eps)) * ofs2
+
+    df['Variedade_Ofensiva_1'] = (
+                                         df['Chutes a gol 1'] + df['Chutes fora 1'] +
+                                         df['Escanteios 1'] + df['Impedimentos 1']
+                                 ) * ofs1
+    df['Variedade_Ofensiva_2'] = (
+                                         df['Chutes a gol 2'] + df['Chutes fora 2'] +
+                                         df['Escanteios 2'] + df['Impedimentos 2']
+                                 ) * ofs2
+
+    df['Controle_Jogo_1'] = df['Posse 1(%)'] * ofs1
+    df['Controle_Jogo_2'] = df['Posse 2(%)'] * ofs2
+
+    # garante não-negatividade dos índices
+    idx_cols = [c for c in df.columns if any(key in c for key in ['Desgaste', 'Barreira', 'Pressao', 'Eficiencia', 'Variedade', 'Controle'])]
+    df[idx_cols] = df[idx_cols].clip(lower=0)
+
+    # remove originais
+    df.drop(columns=orig_cols, inplace=True)
+    return df
