@@ -108,6 +108,14 @@ def load_data(file_path: str) -> pd.DataFrame:
     logger.info(f"Data loaded successfully. Total records: {len(data)}")
     return data
 
+"""
+Pré processamento dos dados:
+Renomeia colunas de posse de bola (Posse 1(%) → Posse 1)
+Remove linhas com valores ausentes em colunas essenciais (Posse, Gols)
+Converte posse percentual para valores entre 0 e 1
+Cria coluna Result com classes W, D, L (Win/Draw/Loss)
+"""
+
 def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
     """Preprocess the data."""
     columns = data.columns.tolist()
@@ -147,6 +155,18 @@ def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
 
     return data
 
+"""
+Prepara os dados para o modelo:
+
+Features: todas as colunas numéricas exceto os gols.
+
+Target: coluna Result (rótulo da partida)
+
+Imputa valores ausentes (média)
+
+Escala os dados (normalização padrão)
+"""
+
 def prepare_features_and_target(data: pd.DataFrame):
     """Prepare features and target for training."""
     features = data.select_dtypes(include=[np.number]).drop(columns=['Gols 1', 'Gols 2'])
@@ -159,6 +179,11 @@ def prepare_features_and_target(data: pd.DataFrame):
     features_scaled = scaler.fit_transform(features_imputed)
 
     return features_scaled, target
+
+"""
+Divide os dados em treino e teste respeitando a ordem cronológica 
+(não aleatória), o que simula melhor a previsão real de partidas futuras.
+"""
 
 def split_data(X, y, train_ratio=0.7):
     """Split data into training and testing sets preserving chronological order."""
@@ -201,6 +226,21 @@ def define_models():
     }
     return models
 
+
+
+"""
+Para cada modelo:
+
+Realiza busca em grade para encontrar os melhores hiperparâmetros
+
+Treina o modelo e gera previsões
+
+Avalia com métricas: accuracy, precision, recall, f1
+
+Salva o melhor modelo baseado na accuracy
+
+""" 
+
 def train_and_evaluate_models(models, X_train, y_train, X_test, y_test):
     """Train and evaluate models, returning results and best model."""
     results = {}
@@ -240,6 +280,17 @@ def train_and_evaluate_models(models, X_train, y_train, X_test, y_test):
             logger.error(f"Error training model {name}: {e}")
 
     return results, best_model_name, best_model
+
+
+
+"""
+Mostra os resultados:
+
+Gráfico de barras comparando as métricas dos modelos
+
+Matriz de confusão do melhor modelo, com labels W, D, L
+
+"""
 
 def display_results(results, best_model_name, best_model, X_test, y_test):
     """Display model results and confusion matrix of the best model."""
